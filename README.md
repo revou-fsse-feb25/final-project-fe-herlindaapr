@@ -1,39 +1,249 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/nHz2UZ-S)
+# Fuwa Touch - Beauty Service Booking Platform
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+A modern web application for beauty service bookings, featuring nail art, eyelash extensions, and other beauty treatments. Built with Next.js, TypeScript, and Tailwind CSS.
 
-## Getting Started
+## 🌟 Features
 
-First, run the development server:
+### For Customers
+- **Service Browsing**: View detailed pricelist with real-time pricing from database
+- **Online Booking**: Book multiple services with preferred date and time
+- **User Dashboard**: Track booking history, status, and manage appointments
+- **Booking Management**: Edit booking details (services, date, time) or cancel bookings
+- **Search Functionality**: Find specific bookings using search filters
+- **Responsive Design**: Optimized for desktop and mobile devices
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+### For Admins
+- **Admin Dashboard**: Overview of business statistics and recent orders
+- **Service Management**: Create, edit, delete, and manage all services
+- **Booking Management**: View all bookings, update status, add notes
+- **User Management**: Access to customer information and booking history
+- **Search & Filter**: Advanced filtering for bookings and services
+- **Real-time Updates**: Live data synchronization across all interfaces
+
+## 🛠 Tech Stack
+
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Styling**: Tailwind CSS
+- **Authentication**: JWT-based authentication system
+- **State Management**: React Context API
+- **API Integration**: RESTful API with custom client
+- **UI Components**: Custom modal system, form validation
+- **Date Handling**: Native JavaScript Date API
+
+## 📁 Project Structure
+
+```
+fuwa-touch/
+├── src/
+│   └── app/
+│       ├── admin/                 # Admin panel pages
+│       │   ├── page.tsx          # Admin dashboard
+│       │   └── services/         # Service management
+│       ├── components/           # Reusable UI components
+│       │   ├── AdminDashboard.tsx
+│       │   ├── BookingForm.tsx
+│       │   ├── EditBookingModal.tsx
+│       │   ├── Hero.tsx
+│       │   ├── Navbar.tsx
+│       │   ├── Pricelist.tsx
+│       │   └── SearchBar.tsx
+│       ├── contexts/             # React contexts
+│       │   └── AuthContext.tsx   # Authentication context
+│       ├── services/             # API services
+│       │   └── api.ts           # API client and endpoints
+│       ├── types/               # TypeScript definitions
+│       │   └── index.ts         # Centralized type definitions
+│       ├── user/                # Customer dashboard
+│       │   └── page.tsx         # User booking history
+│       ├── globals.css          # Global styles
+│       ├── layout.tsx           # Root layout
+│       └── page.tsx             # Homepage
+├── public/                      # Static assets
+│   ├── logo.png
+│   └── [various service images]
+└── [config files]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Getting Started
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- Backend API server running
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Installation
 
-## Learn More
+1. **Clone the repository**
+   ```bash
+   git clone [repository-url]
+   cd fuwa-touch
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   yarn install
+   ```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. **Environment Setup**
+   Create a `.env.local` file in the root directory:
+   ```env
+   NEXT_PUBLIC_API_BASE_URL=http://localhost:3001/api
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. **Run the development server**
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   ```
 
-## Deploy on Vercel
+5. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 📋 API Endpoints
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The application integrates with the following API endpoints:
 
+### Authentication
+- `POST /auth/login` - User login
+- `POST /auth/register` - User registration
+- `GET /auth/me` - Get current user
+
+### Bookings
+- `GET /bookings` - Get all bookings (admin)
+- `GET /bookings/my-bookings` - Get user's bookings
+- `POST /bookings` - Create new booking
+- `PATCH /bookings/:id/user-update` - Update booking (user)
+- `PATCH /bookings/:id/status` - Update booking status (admin)
+- `DELETE /bookings/:id` - Delete booking
+
+### Services
+- `GET /services` - Get all services
+- `POST /services` - Create service (admin)
+- `PATCH /services/:id` - Update service (admin)
+- `DELETE /services/:id` - Delete service (admin)
+
+### Users
+- `GET /users` - Get all users (admin)
+
+## 🎨 UI Components
+
+### Core Components
+- **Hero**: Landing page hero section with eye-tracking animation
+- **Navbar**: Navigation with authentication state management
+- **Pricelist**: Dynamic service listing with real-time pricing
+- **BookingForm**: Multi-service booking form with validation
+- **SearchBar**: Reusable search component with filtering
+
+### Modal Components
+- **LoginModal**: User authentication modal
+- **RegisterModal**: User registration modal
+- **EditBookingModal**: Booking editing with service selection
+- **ServiceEditModal**: Admin service management modal
+- **BookingDetailsModal**: Detailed booking information
+
+### Dashboard Components
+- **AdminDashboard**: Business analytics and recent orders
+- **UserDashboard**: Personal booking history and management
+
+## 🔐 Authentication System
+
+### User Roles
+- **Customer**: Can book services, view/edit own bookings
+- **Admin**: Full access to all bookings, services, and user management
+
+### Authentication Flow
+1. User registers/logs in via modal
+2. JWT token stored in localStorage
+3. Token sent with API requests via Authorization header
+4. Auto-logout on token expiration
+
+## 💼 Business Logic
+
+### Booking System
+- **Multi-Service Booking**: Users can book multiple services in one order
+- **Dynamic Pricing**: Total calculated from selected services and quantities
+- **Status Management**: Pending → Confirmed → Completed workflow
+- **Edit Restrictions**: Cannot edit completed/cancelled bookings
+
+### Service Management
+- **Real-Time Updates**: Changes reflect immediately across all interfaces
+- **Validation**: Price and duration validation with user-friendly errors
+- **Search Integration**: Services searchable by name and description
+
+## 🎯 Key Features Implementation
+
+### Dynamic Pricelist
+- Fetches real-time data from API
+- Categorizes services (Nail Arts vs Eyelashes)
+- Loading states and error handling
+- Responsive grid layout
+
+### Booking Management
+- **For Users**: Edit services, date/time, or delete bookings
+- **For Admins**: Update status, add notes, view all details
+- **Confirmation Dialogs**: Prevent accidental deletions
+- **Real-time Updates**: Changes sync across all users
+
+### Search & Filter
+- **Real-time Search**: Instant filtering as user types
+- **Multi-field Search**: Searches names, descriptions, IDs, dates
+- **Case Insensitive**: Flexible search experience
+- **Empty States**: Clear messaging when no results found
+
+## 🔧 Development
+
+### Code Organization
+- **Centralized Types**: All TypeScript interfaces in `/types/index.ts`
+- **API Client**: Unified API client with error handling
+- **Component Reusability**: Shared components across admin/user interfaces
+- **Context Management**: Authentication state management
+
+### Best Practices
+- TypeScript for type safety
+- Responsive design with Tailwind CSS
+- Error boundaries and loading states
+- Consistent UI patterns
+- Accessible form controls
+
+## 📱 Responsive Design
+
+The application is fully responsive with:
+- **Mobile-First**: Optimized for mobile devices
+- **Tablet Support**: Adapted layouts for tablet screens
+- **Desktop Enhanced**: Rich desktop experience with larger screens
+- **Touch Friendly**: Optimized for touch interactions
+
+## 🚀 Deployment
+
+### Build for Production
+```bash
+npm run build
+npm run start
+```
+
+### Environment Variables
+Ensure all environment variables are set for production:
+- `NEXT_PUBLIC_API_BASE_URL`: Production API endpoint
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 📞 Support
+
+For support, please contact the development team or create an issue in the repository.
+
+---
+
+**Fuwa Touch** - Making beauty service booking simple and elegant ✨

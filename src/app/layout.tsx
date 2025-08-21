@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Petit_Formal_Script, Spectral } from "next/font/google";
 import "./globals.css";
-import Navbar from "./components/Navbar";
+import { AuthProvider } from "./contexts/AuthContext";
 
 const petitFormalScript = Petit_Formal_Script({
   weight: '400',
@@ -28,13 +28,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <>
-        <body
-          className={`${petitFormalScript.variable} ${spectral.variable}`}
-        >
+      <body
+        className={`${petitFormalScript.variable} ${spectral.variable} bg-stone-900 text-stone-100 min-h-screen`}
+      >
+        <AuthProvider>
           {children}
-        </body>
-      </>
+        </AuthProvider>
+      </body>
     </html>
   );
 }

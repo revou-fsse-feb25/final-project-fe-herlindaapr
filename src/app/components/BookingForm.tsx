@@ -3,20 +3,76 @@
 import Link from "next/link";
 import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { bookingsAPI, servicesAPI } from "../services/api";
+
+interface BookingFormData {
+    name: string;
+    email: string;
+    dateTime: string;
+    services: string[];
+    notes: string;
+}
 
 export default function BookingForm() {
-    const serviceOptions: { value: string; label: string }[] = [
-        { value: "nail-art", label: "Nail Art" },
-        { value: "manicure", label: "Manicure" },
-        { value: "pedicure", label: "Pedicure" },
-        { value: "eyelash-classic", label: "Eyelash Extension - Classic" },
-        { value: "eyelash-volume", label: "Eyelash Extension - Volume" },
-        { value: "lash-lift", label: "Lash Lift" },
-        { value: "gel-removal", label: "Gel Removal" },
-    ];
+    const { user, isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
+    const [serviceOptions, setServiceOptions] = useState<{ value: string; label: string; price: number }[]>([]);
+    const [isLoadingServices, setIsLoadingServices] = useState(true);
+
+    const [formData, setFormData] = useState<BookingFormData>({
+        name: '',
+        email: '',
+        dateTime: '',
+        services: [],
+        notes: ''
+    });
 
     const [serviceSelections, setServiceSelections] = useState<string[]>([]);
+    const [serviceSearchTerm, setServiceSearchTerm] = useState<string>('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+    // Fetch services from API
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                setIsLoadingServices(true);
+                const services = await servicesAPI.getAll();
+
+                
+                // Transform API data to match our interface
+                const transformedServices = Array.isArray(services) ? services.map(service => ({
+                    value: service.id || service._id || service.serviceId,
+                    label: service.name || service.serviceName || service.title,
+                    price: service.price || service.cost || 0
+                })) : [];
+                
+                setServiceOptions(transformedServices);
+            } catch (error) {
+                console.error('Error fetching services:', error);
+            } finally {
+                setIsLoadingServices(false);
+            }
+        };
+
+        fetchServices();
+    }, []);
+
+    // Auto-fill user data if authenticated
+    useEffect(() => {
+        if (isAuthenticated && user) {
+            setFormData(prev => ({
+                ...prev,
+                name: user.name,
+                email: user.email
+            }));
+            // Hide login prompt when user becomes authenticated
+            setShowLoginPrompt(false);
+            setSubmitMessage(null);
+        }
+    }, [isAuthenticated, user]);
 
     function handleAddService(): void {
         setServiceSelections((prev) => [...prev, ""]);
@@ -33,13 +89,112 @@ export default function BookingForm() {
     function handleRemoveService(index: number): void {
         setServiceSelections((prev) => prev.filter((_, i) => i !== index));
     }
+
+    function getFilteredServices() {
+        if (!serviceSearchTerm) return serviceOptions;
+        
+        return serviceOptions.filter(service =>
+            service.label.toLowerCase().includes(serviceSearchTerm.toLowerCase())
+        );
+    }
+
+    const handleInputChange = (field: keyof BookingFormData, value: string) => {
+        setFormData(prev => ({
+            ...prev,
+            [field]: value
+        }));
+    };
+
+    const calculateTotalPrice = () => {
+        return serviceSelections
+            .filter(service => service !== '')
+            .reduce((total, serviceValue) => {
+                const service = serviceOptions.find(opt => `${opt.value}` === serviceValue);
+                const price = service?.price || 0;
+                return total + price;
+            }, 0);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        // Validate form first
+        if (!formData.name || !formData.email || !formData.dateTime) {
+            setSubmitMessage({ type: 'error', text: 'Please fill in all required fields' });
+            return;
+        }
+
+        // Validate date is in the future
+        const selectedDate = new Date(formData.dateTime);
+        const now = new Date();
+        if (selectedDate <= now) {
+            setSubmitMessage({ type: 'error', text: 'Please select a future date and time for your appointment' });
+            return;
+        }
+
+        if (serviceSelections.length === 0 || serviceSelections.every(s => s === '')) {
+            setSubmitMessage({ type: 'error', text: 'Please select at least one service' });
+            return;
+        }
+
+        // Check if user is authenticated
+        if (!isAuthenticated) {
+            setShowLoginPrompt(true);
+            setSubmitMessage({ type: 'error', text: 'Please login to submit your booking' });
+            return;
+        }
+
+        setIsSubmitting(true);
+        setSubmitMessage(null);
+        setShowLoginPrompt(false);
+
+        try {
+            const bookingData = {
+                bookingDate: formData.dateTime,
+                services: serviceSelections.filter(s => s !== ''),
+                notes: formData.notes,
+            };
+
+            const response = await bookingsAPI.create(bookingData);
+
+            setSubmitMessage({ 
+                type: 'success', 
+                text: 'Booking created successfully! View your bookings in your dashboard.' 
+            });
+
+            // Reset form
+            setFormData({
+                name: user?.name || '',
+                email: user?.email || '',
+                dateTime: '',
+                services: [],
+                notes: ''
+            });
+            setServiceSelections([]);
+
+        } catch (error: any) {
+            console.error('Error creating booking:', error);
+            setSubmitMessage({ 
+                type: 'error', 
+                text: error.message || 'Failed to create booking. Please try again.' 
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const openLoginModal = () => {
+        const modal = document.getElementById('my_modal_2') as HTMLDialogElement;
+        if (modal) modal.showModal();
+    };
+
     return (
         <div className="flex w-full justify-center flex-col items-center">
-            <form action="" className="w-full max-w-lg space-y-3">
+            <form onSubmit={handleSubmit} className="w-full max-w-lg space-y-3">
             
                 {/* name input */}
                 <label className="input validator w-full bg-stone-100">
-                    <svg className="h-[1em] text-yellow-900" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <svg className={`h-[1em] ${isAuthenticated ? 'text-stone-100' : 'text-yellow-900'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <g
                         strokeLinejoin="round"
                         strokeLinecap="round"
@@ -59,7 +214,10 @@ export default function BookingForm() {
                         minLength={4}
                         maxLength={30}
                         title="Only letters, numbers or dash"
-                        className="text-yellow-950 placeholder:text-yellow-950/30"
+                        className="text-yellow-950 placeholder:text-yellow-950/30 disabled:opacity-100 disabled:bg-stone-100 disabled:text-yellow-950"
+                        value={formData.name}
+                        onChange={(e) => handleInputChange('name', e.target.value)}
+                        disabled={isAuthenticated}
                     />
                     </label>
                     <p className="validator-hint w-full">
@@ -69,7 +227,7 @@ export default function BookingForm() {
 
                 {/* email input */}
                 <label className="input validator w-full bg-stone-100">
-                    <svg className="h-[1em] text-yellow-900" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <svg className={`h-[1em] ${isAuthenticated ? 'text-stone-100' : 'text-yellow-900'}`} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                         <g
                         strokeLinejoin="round"
                         strokeLinecap="round"
@@ -81,7 +239,15 @@ export default function BookingForm() {
                         <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
                         </g>
                     </svg>
-                    <input type="email" placeholder="mail@site.com" required className="text-yellow-950 placeholder:text-yellow-950/30" />
+                    <input 
+                        type="email" 
+                        placeholder="mail@site.com" 
+                        required 
+                        className="text-yellow-950 placeholder:text-yellow-950/30 disabled:opacity-100 disabled:bg-stone-100 disabled:text-yellow-950"
+                        value={formData.email}
+                        onChange={(e) => handleInputChange('email', e.target.value)}
+                        disabled={isAuthenticated}
+                    />
                 </label>
                     <div className="validator-hint w-full invisible min-h-5">Enter valid email address</div>
 
@@ -89,6 +255,10 @@ export default function BookingForm() {
                 <input
                     type="datetime-local"
                     className="input w-full mt-2 bg-stone-100 text-yellow-950 [&::-webkit-calendar-picker-indicator]:text-yellow-950 [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:sepia [&::-webkit-calendar-picker-indicator]:saturate-200 [&::-webkit-calendar-picker-indicator]:hue-rotate-[330deg] [&::-webkit-calendar-picker-indicator]:brightness-90 [&::-webkit-calendar-picker-indicator]:contrast-100"
+                    value={formData.dateTime}
+                    onChange={(e) => handleInputChange('dateTime', e.target.value)}
+                    min={new Date().toISOString().slice(0, 16)}
+                    required
                 />
 
                 {/* services add button and dynamic list */}
@@ -100,10 +270,35 @@ export default function BookingForm() {
                             onClick={handleAddService}
                             className="btn btn-sm btn-outline border-stone-400 text-stone-700 hover:border-stone-600 hover:text-stone-100"
                             aria-label="Add service"
+                            disabled={isLoadingServices}
                         >
-                            + Add
+                            {isLoadingServices ? 'Loading...' : '+ Add'}
                         </button>
                     </div>
+
+                    {/* Single Search Input */}
+                    {serviceSelections.length > 0 && (
+                        <div className="mt-3">
+                            <input
+                                type="text"
+                                placeholder="Search services by name..."
+                                value={serviceSearchTerm}
+                                onChange={(e) => setServiceSearchTerm(e.target.value)}
+                                className="input input-sm bg-white text-yellow-950 placeholder:text-yellow-950/50 w-full mb-3"
+                            />
+                            {serviceSearchTerm && (
+                                <p className="text-xs text-stone-500 mb-3">
+                                    {getFilteredServices().length} service(s) found
+                                </p>
+                            )}
+                        </div>
+                    )}
+
+                    {isLoadingServices && (
+                        <div className="mt-3 p-3 bg-stone-200 rounded-lg">
+                            <p className="text-stone-600 text-sm">Loading services...</p>
+                        </div>
+                    )}
 
                     {serviceSelections.length > 0 && (
                         <div className="mt-3">
@@ -117,9 +312,13 @@ export default function BookingForm() {
                                             className="select select-bordered select-sm bg-stone-100 text-yellow-950 w-auto min-w-[12rem]"
                                             required
                                         >
-                                            <option value="" disabled>Select a service...</option>
-                                            {serviceOptions.map((opt) => (
-                                                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                                            <option value="" disabled>
+                                                {serviceSearchTerm ? 'Select from filtered results...' : 'Select a service...'}
+                                            </option>
+                                            {getFilteredServices().map((opt) => (
+                                                <option key={opt.value} value={opt.value}>
+                                                    {opt.label} - IDR {Number(opt.price).toLocaleString()}
+                                                </option>
                                             ))}
                                         </select>
                                         <button
@@ -134,16 +333,61 @@ export default function BookingForm() {
                                 ))}
                             </div>
                             <p className="text-xs text-stone-500 mt-1">Click "+ Add" to include more services.</p>
+                            
+                            {/* Total Price Display */}
+                            {serviceSelections.some(s => s !== '') && (
+                                <div className="mt-3 p-3 bg-stone-200 rounded-lg">
+                                    <p className="text-stone-800 font-semibold">
+                                        Total: IDR {calculateTotalPrice().toLocaleString()}
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
 
                 {/* notes input */}
                 <fieldset className="fieldset w-full">
-                    <input type="text" className="input bg-stone-100 text-yellow-950 placeholder:text-yellow-950/30 w-full" placeholder="Leave us a note" />
+                    <input 
+                        type="text" 
+                        className="input bg-stone-100 text-yellow-950 placeholder:text-yellow-950/30 w-full" 
+                        placeholder="Leave us a note" 
+                        value={formData.notes}
+                        onChange={(e) => handleInputChange('notes', e.target.value)}
+                    />
                     <p className="label text-yellow-950/30">*Optional</p>
                 </fieldset>
-                <button className="btn btn-neutral join-item bg-yellow-950 hover:bg-black">Submit</button>
+
+                {/* Login Prompt */}
+                {showLoginPrompt && !isAuthenticated && (
+                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p className="text-yellow-800 mb-3">Please login to submit your booking</p>
+                        <button 
+                            type="button"
+                            onClick={openLoginModal}
+                            className="btn btn-sm bg-yellow-950 text-white hover:bg-black"
+                        >
+                            Login Now
+                        </button>
+                    </div>
+                )}
+
+                <button 
+                    type="submit"
+                    className={`btn btn-neutral join-item ${isAdmin ? 'bg-gray-500 cursor-not-allowed' : 'bg-yellow-950 hover:bg-black'}`}
+                    disabled={isSubmitting || authLoading || isAdmin}
+                    title={isAdmin ? 'Admins cannot create bookings' : ''}
+                >
+                    {isAdmin ? 'Admin Access Only' : isSubmitting ? 'Creating Booking...' : 'Book'}
+                </button>
+                
+                {isAdmin && (
+                    <div className="mt-2 text-center">
+                        <p className="text-sm text-gray-600">
+                            Booking is disabled for admin accounts
+                        </p>
+                    </div>
+                )}
             </form>
 
             {/* Contact Info */}

@@ -1,13 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function LoginModal() {
+    const { login } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: ''
     });
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -17,14 +21,26 @@ export default function LoginModal() {
         }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Handle login logic here
-        console.log('Login attempt:', formData);
-        // Close modal after submission
-        const modal = document.getElementById('my_modal_2') as HTMLDialogElement;
-        if (modal) {
-            modal.close();
+        setIsLoading(true);
+        setError('');
+
+        try {
+            const success = await login(formData.email, formData.password);
+            if (success) {
+                // Close modal after successful login
+                const modal = document.getElementById('my_modal_2') as HTMLDialogElement;
+                if (modal) {
+                    modal.close();
+                }
+            } else {
+                setError('Invalid email or password');
+            }
+        } catch (err) {
+            setError('Login failed. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -41,23 +57,13 @@ export default function LoginModal() {
                 <div className="modal-box bg-stone-900">
                     <h3 className="font-bold mb-4 text-center text-2xl">Please Login</h3>
                     
-                    <form id="loginForm" onSubmit={handleSubmit} className="space-y-4">
-                        <div className="form-control">
-                            <label htmlFor="name" className="label">
-                                <span className="label-text">Name</span>
-                            </label>
-                            <input
-                                type="text"
-                                id="name"
-                                name="name"
-                                value={formData.name}
-                                onChange={handleInputChange}
-                                className="input input-bordered w-full bg-stone-700"
-                                placeholder="Enter your name"
-                                required
-                            />
+                    {error && (
+                        <div className="alert alert-error mb-4">
+                            <span>{error}</span>
                         </div>
+                    )}
 
+                    <form id="loginForm" onSubmit={handleSubmit} className="space-y-4">
                         <div className="form-control">
                             <label htmlFor="email" className="label">
                                 <span className="label-text">Email</span>
@@ -89,7 +95,14 @@ export default function LoginModal() {
                                 required
                             />
                         </div>
-                        <button type="submit" form="loginForm" className="btn btn-primary">Login</button>
+                        <button 
+                            type="submit" 
+                            form="loginForm" 
+                            className="btn btn-primary w-full"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Logging in...' : 'Login'}
+                        </button>
                     </form>
                     <div className="mt-4 text-sm text-stone-300">
                         Don't have an account?{' '}

@@ -1,14 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function RegisterModal() {
+    const { register } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         email: '',
         password: '',
         confirmPassword: ''
     });
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
@@ -18,18 +22,39 @@ export default function RegisterModal() {
         }));
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Basic client-side check; replace with real validation
+        setIsLoading(true);
+        setError('');
+
+        // Basic client-side validation
         if (formData.password !== formData.confirmPassword) {
-            alert('Passwords do not match');
+            setError('Passwords do not match');
+            setIsLoading(false);
             return;
         }
-        console.log('Register attempt:', formData);
-        // Close modal after submission
-        const modal = document.getElementById('register_modal') as HTMLDialogElement;
-        if (modal) {
-            modal.close();
+
+        if (formData.password.length < 6) {
+            setError('Password must be at least 6 characters long');
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            const success = await register(formData.name, formData.email, formData.password);
+            if (success) {
+                // Close modal after successful registration
+                const modal = document.getElementById('register_modal') as HTMLDialogElement;
+                if (modal) {
+                    modal.close();
+                }
+            } else {
+                setError('Registration failed. Please try again.');
+            }
+        } catch (err) {
+            setError('Registration failed. Please try again.');
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -45,6 +70,12 @@ export default function RegisterModal() {
             <dialog id="register_modal" className="modal">
                 <div className="modal-box bg-stone-900">
                     <h3 className="font-bold mb-4 text-center text-2xl">Create Account</h3>
+
+                    {error && (
+                        <div className="alert alert-error mb-4">
+                            <span>{error}</span>
+                        </div>
+                    )}
 
                     <form id="registerForm" onSubmit={handleSubmit} className="space-y-4">
                         <div className="form-control">
@@ -111,7 +142,14 @@ export default function RegisterModal() {
                             />
                         </div>
 
-                        <button type="submit" form="registerForm" className="btn btn-primary">Register</button>
+                        <button 
+                            type="submit" 
+                            form="registerForm" 
+                            className="btn btn-primary w-full"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? 'Creating account...' : 'Register'}
+                        </button>
                     </form>
 
                     <div className="mt-4 text-sm text-stone-300">
