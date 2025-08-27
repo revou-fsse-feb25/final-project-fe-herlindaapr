@@ -226,7 +226,46 @@ npm run start
 
 ### Environment Variables
 Ensure all environment variables are set for production:
+
 - `NEXT_PUBLIC_API_BASE_URL`: Production API endpoint
+
+## Screenshots
+
+### Homepage
+<img width="1424" height="785" alt="Screenshot 2025-08-27 at 11 27 27" src="https://github.com/user-attachments/assets/dffdaa5b-b3f0-4e4d-a49b-94fcef7a4ebd" />
+
+
+### Booking form
+User View
+<img width="1416" height="786" alt="Screenshot 2025-08-27 at 11 29 00" src="https://github.com/user-attachments/assets/82fc4390-4e99-43a8-9aa3-662cde070be1" />
+
+Admin View (button not available in admin mode)
+<img width="1421" height="785" alt="Screenshot 2025-08-27 at 11 30 17" src="https://github.com/user-attachments/assets/76b3ee85-5a63-403b-ad52-69d5a2de2ded" />
+
+
+### Admin Panel
+<img width="1422" height="778" alt="Screenshot 2025-08-27 at 11 31 28" src="https://github.com/user-attachments/assets/91068379-472d-437e-b6ba-7c558077cf13" />
+
+
+### Admin Edit Modal
+<img width="1431" height="772" alt="Screenshot 2025-08-27 at 11 33 16" src="https://github.com/user-attachments/assets/3655bc31-e740-4174-8531-2b54e1449457" />
+
+
+### Service Panel (admin)
+<img width="1418" height="767" alt="Screenshot 2025-08-27 at 11 34 14" src="https://github.com/user-attachments/assets/ba02d4f2-5b66-4f1c-8744-23622cd93fb5" />
+
+
+### Edit Service Modal (admin)
+<img width="1422" height="769" alt="Screenshot 2025-08-27 at 11 35 40" src="https://github.com/user-attachments/assets/10e2066c-4653-482d-8a9c-da101a529759" />
+
+
+### User Dashboard
+<img width="1428" height="739" alt="Screenshot 2025-08-27 at 11 37 31" src="https://github.com/user-attachments/assets/46766542-2f80-4621-ae71-19e9f520b224" />
+
+
+### User Edit Booking Modal
+<img width="1433" height="783" alt="Screenshot 2025-08-27 at 11 39 46" src="https://github.com/user-attachments/assets/f400c86b-e9ef-4c86-98b7-af837f3225bc" />
+
 
 ## 🤝 Contributing
 
