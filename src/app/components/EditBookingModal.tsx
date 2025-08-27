@@ -70,8 +70,11 @@ export default function EditBookingModal({
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
-    if (!formData.services.length || formData.services.every(s => s === '')) {
-      newErrors.services = 'Please select at least one service';
+    // Only validate services if booking status is not "confirmed"
+    if (booking?.status !== "confirmed") {
+      if (!formData.services.length || formData.services.every(s => s === '')) {
+        newErrors.services = 'Please select at least one service';
+      }
     }
 
     if (!formData.bookingDate) {
@@ -107,38 +110,53 @@ export default function EditBookingModal({
       // Combine date and time and format as full ISO datetime
       const appointmentDateTime = new Date(`${formData.bookingDate}T${formData.appointmentTime}:00.000Z`);
       
-      const updateData = {
-        services: formData.services.filter(service => service !== ''), // Remove empty strings
+      let updateData: any = {
         bookingDate: appointmentDateTime.toISOString()
       };
 
-      await bookingsAPI.userUpdate(booking.id, updateData);
+      let updatedBooking: BookingItem;
 
-      // Find all selected services and calculate new display
-      const selectedServices = formData.services
-        .filter(serviceId => serviceId !== '')
-        .map(serviceId => services.find(s => s.id.toString() === serviceId))
-        .filter(service => service !== undefined);
+      // Only include services in update if booking status is not "confirmed"
+      if (booking.status !== "confirmed") {
+        updateData.services = formData.services.filter(service => service !== ''); // Remove empty strings
+        
+        await bookingsAPI.userUpdate(booking.id, updateData);
 
-      const serviceDisplayNames = selectedServices.map(service => service!.name).join(', ');
-      const totalAmount = selectedServices.reduce((total, service) => total + service!.price, 0);
+        // Find all selected services and calculate new display
+        const selectedServices = formData.services
+          .filter(serviceId => serviceId !== '')
+          .map(serviceId => services.find(s => s.id.toString() === serviceId))
+          .filter(service => service !== undefined);
 
-      // Create updated services array for the booking
-      const updatedServices = selectedServices.map(service => ({
-        id: service!.id.toString(),
-        name: service!.name,
-        price: service!.price,
-        quantity: 1
-      }));
-      
-      // Update the booking in parent component
-      const updatedBooking: BookingItem = {
-        ...booking,
-        service: serviceDisplayNames,
-        services: updatedServices,
-        date: appointmentDateTime.toISOString(),
-        amount: `Rp. ${totalAmount.toLocaleString()}`
-      };
+        const serviceDisplayNames = selectedServices.map(service => service!.name).join(', ');
+        const totalAmount = selectedServices.reduce((total, service) => total + service!.price, 0);
+
+        // Create updated services array for the booking
+        const updatedServices = selectedServices.map(service => ({
+          id: service!.id.toString(),
+          name: service!.name,
+          price: service!.price,
+          quantity: 1
+        }));
+        
+        // Update the booking in parent component with new services
+        updatedBooking = {
+          ...booking,
+          service: serviceDisplayNames,
+          services: updatedServices,
+          date: appointmentDateTime.toISOString(),
+          amount: `Rp. ${totalAmount.toLocaleString()}`
+        };
+      } else {
+        // For confirmed bookings, only update date/time
+        await bookingsAPI.userUpdate(booking.id, updateData);
+        
+        // Update the booking in parent component keeping existing services
+        updatedBooking = {
+          ...booking,
+          date: appointmentDateTime.toISOString()
+        };
+      }
 
       onBookingUpdate(updatedBooking);
       onClose();
@@ -195,7 +213,7 @@ export default function EditBookingModal({
           <h3 className="text-lg font-medium text-stone-100">Edit Booking</h3>
           <button
             onClick={handleClose}
-            className="text-stone-400 hover:text-stone-200"
+            className="text-stone-400 hover:text-stone-200 cursor-pointer"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -234,6 +252,16 @@ export default function EditBookingModal({
             <label className="block text-sm font-medium text-stone-300 mb-2">
               Services *
             </label>
+            {booking.status === "confirmed" && (
+              <div className="bg-blue-900/20 border border-blue-700 rounded-md p-3 mb-2">
+                <p className="text-blue-300 text-sm">
+                  <svg className="w-4 h-4 inline-block mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  Service changes are not allowed for confirmed bookings. You can only change the date and time.
+                </p>
+              </div>
+            )}
             {isLoadingServices ? (
               <div className="text-stone-400">Loading services...</div>
             ) : (
@@ -247,7 +275,12 @@ export default function EditBookingModal({
                         newServices[index] = e.target.value;
                         setFormData({ ...formData, services: newServices });
                       }}
-                      className="flex-1 px-3 py-2 bg-stone-700 border border-stone-600 rounded-md text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      disabled={booking.status === "confirmed"}
+                      className={`flex-1 px-3 py-2 border rounded-md text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        booking.status === "confirmed"
+                          ? "bg-stone-600 border-stone-500 text-stone-400 cursor-not-allowed"
+                          : "bg-stone-700 border-stone-600"
+                      }`}
                     >
                       <option value="">Select a service</option>
                       {services.map((service) => (
@@ -256,7 +289,7 @@ export default function EditBookingModal({
                         </option>
                       ))}
                     </select>
-                    {formData.services.length > 1 && (
+                    {formData.services.length > 1 && booking.status !== "confirmed" && (
                       <button
                         type="button"
                         onClick={() => {
@@ -270,8 +303,8 @@ export default function EditBookingModal({
                     )}
                   </div>
                 ))}
-                {/* Only show Add Another Service if all current services are selected */}
-                {formData.services.every(service => service !== '') && (
+                {/* Only show Add Another Service if all current services are selected and status is not confirmed */}
+                {formData.services.every(service => service !== '') && booking.status !== "confirmed" && (
                   <button
                     type="button"
                     onClick={() => {
@@ -284,7 +317,7 @@ export default function EditBookingModal({
                 )}
               </div>
             )}
-            {errors.services && (
+            {errors.services && booking.status !== "confirmed" && (
               <p className="text-red-400 text-xs mt-1">{errors.services}</p>
             )}
           </div>
@@ -298,7 +331,7 @@ export default function EditBookingModal({
               type="date"
               value={formData.bookingDate}
               onChange={(e) => setFormData({ ...formData, bookingDate: e.target.value })}
-              className="w-full px-3 py-2 bg-stone-700 border border-stone-600 rounded-md text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 cursor-pointer bg-stone-700 border border-stone-600 rounded-md text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.bookingDate && (
               <p className="text-red-400 text-xs mt-1">{errors.bookingDate}</p>
@@ -314,7 +347,7 @@ export default function EditBookingModal({
               type="time"
               value={formData.appointmentTime}
               onChange={(e) => setFormData({ ...formData, appointmentTime: e.target.value })}
-              className="w-full px-3 py-2 bg-stone-700 border border-stone-600 rounded-md text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 bg-stone-700 cursor-pointer border border-stone-600 rounded-md text-stone-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {errors.appointmentTime && (
               <p className="text-red-400 text-xs mt-1">{errors.appointmentTime}</p>

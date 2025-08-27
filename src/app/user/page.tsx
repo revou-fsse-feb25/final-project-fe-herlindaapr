@@ -82,27 +82,6 @@ export default function UserDashboard(){
         fetchBookings();
     }, [isAuthenticated, authLoading, user]);
 
-    // Handle search functionality
-    const handleSearch = (searchInput: string) => {
-        
-        if (!searchInput.trim()) {
-            setFilteredBookings(bookings);
-            return;
-        }
-
-        const searchTerm = searchInput.toLowerCase();
-        const filtered = bookings.filter(booking => 
-            booking.service.toLowerCase().includes(searchTerm) ||
-            booking.id.toLowerCase().includes(searchTerm) ||
-            booking.status.toLowerCase().includes(searchTerm) ||
-            booking.date.toLowerCase().includes(searchTerm) ||
-            (booking.customerName && booking.customerName.toLowerCase().includes(searchTerm)) ||
-            (booking.notes && booking.notes.toLowerCase().includes(searchTerm))
-        );
-        
-        setFilteredBookings(filtered);
-    };
-
     // Handle booking edit
     const handleEditBooking = (booking: BookingItem) => {
         setSelectedBooking(booking);
@@ -259,6 +238,8 @@ export default function UserDashboard(){
                                                 title={
                                                     booking.status === "completed" || booking.status === "cancelled"
                                                         ? `Cannot edit ${booking.status} bookings`
+                                                        : booking.status === "confirmed"
+                                                        ? "Edit booking date and time only"
                                                         : "Edit booking date and service"
                                                 }
                                             >
