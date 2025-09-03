@@ -391,8 +391,8 @@ export default function BookingForm() {
             </form>
 
             {/* Contact Info */}
-            <div className="text-stone-950 w-3/4 h-14 flex flex-row border gap-x-10 place-self-center items-center justify-center mt-10 rounded-sm">
-                <p className="text-center text-sm">© 2025 All Rights Reserved</p>
+            <div className="text-stone-950 w-full md:w-3/4 h-14 flex flex-row border gap-x-2 md:gap-x-10 place-self-center items-center justify-center mt-10 rounded-sm">
+                <p className="text-center text-[10px] md:text-sm">© 2025 All Rights Reserved</p>
                 <Link href="/faq" className="flex border rounded-full gap-2 p-2 hover:bg-stone-600 hover:text-stone-100 bg-stone-300">
                     <p className="hover:underline">FAQ</p>
                 </Link>

@@ -40,7 +40,7 @@ export default function Pricelist() {
 
   return (
     <>
-      <div className="w-1/2 flex flex-col justify-center">
+      <div className="w-full md:w-1/2 flex flex-col justify-center">
         <h2 className="text-stone-600 text-center text-2xl font-bold">Nail Arts</h2>
 
         {/* NAILS PRICELIST */}
@@ -77,7 +77,7 @@ export default function Pricelist() {
       
       <span className="border-s border-yellow-900 h-full mt-14"></span>
       
-      <div className="w-1/2 flex flex-col">
+      <div className="w-full md:w-1/2 flex flex-col">
         <h2 className="text-stone-600 text-center text-2xl font-bold">Eyelashes</h2>
 
         {/* EYELASHES PRICELIST */}
