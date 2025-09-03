@@ -26,13 +26,13 @@ export default function Hero() {
 
         /** Opening logo animation (same for all) */
         gsap.to(".opening-animation", {
-          x: isDesktop ? 520 : 80,
+          x: isDesktop ? 520 : 97,
           duration: 1.5,
           ease: "power2.out",
         });
 
         gsap.to(".opening-animation-2", {
-          x: isDesktop ? -430 : -80,
+          x: isDesktop ? -430 : -97,
           duration: 1.5,
           ease: "power2.out",
         });
@@ -156,7 +156,7 @@ export default function Hero() {
           </p>
         </div>
         <div
-          className="hero-image flex h-1/5 md:h-max w-5/6 md:w-1/2 self-center justify-center"
+          className="hero-image flex h-1/3 md:h-max w-5/6 md:w-1/2 self-center justify-center"
           ref={heroImageRef}
         >
           <Image src={"/hero-img.png"} alt="Hero Image" width={300} height={300} className="md:w-[500px] md:h-[500px]" />

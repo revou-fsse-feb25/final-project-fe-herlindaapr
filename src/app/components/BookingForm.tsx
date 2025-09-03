@@ -5,7 +5,9 @@ import { FaWhatsapp, FaInstagram } from "react-icons/fa";
 import { SiGmail } from "react-icons/si";
 import { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useToast } from "../contexts/ToastContext";
 import { bookingsAPI, servicesAPI } from "../services/api";
+import { timeSlotUtils, BUSINESS_HOURS } from "../types";
 
 interface BookingFormData {
     name: string;
@@ -17,6 +19,7 @@ interface BookingFormData {
 
 export default function BookingForm() {
     const { user, isAuthenticated, isAdmin, isLoading: authLoading } = useAuth();
+    const { showToast } = useToast();
     const [serviceOptions, setServiceOptions] = useState<{ value: string; label: string; price: number }[]>([]);
     const [isLoadingServices, setIsLoadingServices] = useState(true);
 
@@ -31,8 +34,6 @@ export default function BookingForm() {
     const [serviceSelections, setServiceSelections] = useState<string[]>([]);
     const [serviceSearchTerm, setServiceSearchTerm] = useState<string>('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submitMessage, setSubmitMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
-    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
     // Fetch services from API
     useEffect(() => {
@@ -68,9 +69,6 @@ export default function BookingForm() {
                 name: user.name,
                 email: user.email
             }));
-            // Hide login prompt when user becomes authenticated
-            setShowLoginPrompt(false);
-            setSubmitMessage(null);
         }
     }, [isAuthenticated, user]);
 
@@ -120,7 +118,7 @@ export default function BookingForm() {
         
         // Validate form first
         if (!formData.name || !formData.email || !formData.dateTime) {
-            setSubmitMessage({ type: 'error', text: 'Please fill in all required fields' });
+            showToast('error', 'Please fill in all required fields');
             return;
         }
 
@@ -128,25 +126,29 @@ export default function BookingForm() {
         const selectedDate = new Date(formData.dateTime);
         const now = new Date();
         if (selectedDate <= now) {
-            setSubmitMessage({ type: 'error', text: 'Please select a future date and time for your appointment' });
+            showToast('error', 'Please select a future date and time for your appointment');
+            return;
+        }
+
+        // Validate business hours
+        const hours = selectedDate.getHours();
+        if (hours < 9 || hours >= 16) {
+            showToast('error', `Booking must be between ${BUSINESS_HOURS.openTime} and ${BUSINESS_HOURS.closeTime}`);
             return;
         }
 
         if (serviceSelections.length === 0 || serviceSelections.every(s => s === '')) {
-            setSubmitMessage({ type: 'error', text: 'Please select at least one service' });
+            showToast('error', 'Please select at least one service');
             return;
         }
 
         // Check if user is authenticated
         if (!isAuthenticated) {
-            setShowLoginPrompt(true);
-            setSubmitMessage({ type: 'error', text: 'Please login to submit your booking' });
+            openLoginModal();
             return;
         }
 
         setIsSubmitting(true);
-        setSubmitMessage(null);
-        setShowLoginPrompt(false);
 
         try {
             const bookingData = {
@@ -157,10 +159,26 @@ export default function BookingForm() {
 
             const response = await bookingsAPI.create(bookingData);
 
-            setSubmitMessage({ 
-                type: 'success', 
-                text: 'Booking created successfully! View your bookings in your dashboard.' 
-            });
+            // Verify booking was actually created by checking user's bookings
+            try {
+                const userBookings = await bookingsAPI.getMyBookings();
+                
+                // Check if the new booking exists
+                const newBookingExists = userBookings.some((booking: any) => 
+                    booking.id === response.id || 
+                    new Date(booking.bookingDate || booking.appointmentDate || booking.date).getTime() === 
+                    new Date(bookingData.bookingDate).getTime()
+                );
+                
+                if (newBookingExists) {
+                    showToast('success', 'Booking created successfully! View your bookings in your dashboard.');
+                } else {
+                    showToast('warning', 'Booking submitted but verification failed. Please check your dashboard.');
+                }
+            } catch (verifyError) {
+                console.error('❌ DEBUG: Failed to verify booking creation:', verifyError);
+                showToast('success', 'Booking created successfully! View your bookings in your dashboard.');
+            }
 
             // Reset form
             setFormData({
@@ -173,11 +191,22 @@ export default function BookingForm() {
             setServiceSelections([]);
 
         } catch (error: any) {
-            console.error('Error creating booking:', error);
-            setSubmitMessage({ 
-                type: 'error', 
-                text: error.message || 'Failed to create booking. Please try again.' 
+            console.error('❌ DEBUG: Booking creation failed:', error);
+            console.error('❌ DEBUG: Error details:', {
+                message: error.message,
+                stack: error.stack,
+                response: error.response,
+                status: error.status
             });
+            
+            // Check if it's a network/auth issue
+            if (error.message?.includes('Authentication required') || error.message?.includes('401')) {
+                showToast('error', 'Session expired. Please login again.');
+            } else if (error.message?.includes('Network') || error.message?.includes('fetch')) {
+                showToast('error', 'Network error. Please check your connection and try again.');
+            } else {
+                showToast('error', error.message || 'Failed to create booking. Please try again.');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -252,14 +281,22 @@ export default function BookingForm() {
                     <div className="validator-hint w-full invisible min-h-5">Enter valid email address</div>
 
                 {/* date time input */}
-                <input
-                    type="datetime-local"
-                    className="input w-full mt-2 bg-stone-100 text-yellow-950 [&::-webkit-calendar-picker-indicator]:text-yellow-950 [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:sepia [&::-webkit-calendar-picker-indicator]:saturate-200 [&::-webkit-calendar-picker-indicator]:hue-rotate-[330deg] [&::-webkit-calendar-picker-indicator]:brightness-90 [&::-webkit-calendar-picker-indicator]:contrast-100"
-                    value={formData.dateTime}
-                    onChange={(e) => handleInputChange('dateTime', e.target.value)}
-                    min={new Date().toISOString().slice(0, 16)}
-                    required
-                />
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                        <label className="text-stone-800 font-medium">Date & Time</label>
+                        <div className="text-xs text-stone-600">
+                            Business Hours: {BUSINESS_HOURS.openTime} - {BUSINESS_HOURS.closeTime}
+                        </div>
+                    </div>
+                    <input
+                        type="datetime-local"
+                        className="input w-full bg-stone-100 text-yellow-950 [&::-webkit-calendar-picker-indicator]:text-yellow-950 [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-calendar-picker-indicator]:invert [&::-webkit-calendar-picker-indicator]:sepia [&::-webkit-calendar-picker-indicator]:saturate-200 [&::-webkit-calendar-picker-indicator]:hue-rotate-[330deg] [&::-webkit-calendar-picker-indicator]:brightness-90 [&::-webkit-calendar-picker-indicator]:contrast-100"
+                        value={formData.dateTime}
+                        onChange={(e) => handleInputChange('dateTime', e.target.value)}
+                        min={new Date().toISOString().slice(0, 16)}
+                        required
+                    />
+                </div>
 
                 {/* services add button and dynamic list */}
                 <div className="mt-2">
@@ -358,19 +395,7 @@ export default function BookingForm() {
                     <p className="label text-yellow-950/30">*Optional</p>
                 </fieldset>
 
-                {/* Login Prompt */}
-                {showLoginPrompt && !isAuthenticated && (
-                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-yellow-800 mb-3">Please login to submit your booking</p>
-                        <button 
-                            type="button"
-                            onClick={openLoginModal}
-                            className="btn btn-sm bg-yellow-950 text-white hover:bg-black"
-                        >
-                            Login Now
-                        </button>
-                    </div>
-                )}
+
 
                 <button 
                     type="submit"

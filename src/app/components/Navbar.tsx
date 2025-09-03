@@ -26,30 +26,21 @@ export default function Navbar() {
 
 
   return (
-    <div className="fixed nav flex items-center justify-between top-0 z-10 w-80 md:w-full px-4 py-2 bg-stone-100/80 backdrop-blur-md">
+    <div className="fixed nav flex items-center justify-between top-0 z-30 w-screen md:w-full px-4 py-2 bg-stone-100/80 backdrop-blur-md">
       {/* Left side (logo + greeting) */}
-      <div className="flex items-center">
+      <div className="flex items-center w-full">
         <Link href="/home" className="self-center">
           <img src="/logo.png" alt="Logo Apps" className="w-20 h-11" />
         </Link>
         {user && (
-          <div className="hidden md:flex flex-row items-center">
-            <span className="text-stone-700 ml-6 font-medium">Hi, {user.name}</span>
-            {isAdmin ? (
-              <Link
-                href="/admin"
-                className="font-bold text-stone-700 ml-4 hover:text-yellow-900 hover:cursor-pointer hover:underline transition-colors"
-              >
-                Dashboard
-              </Link>
-            ) : (
-              <Link
-                href="/user"
-                className="font-bold text-stone-700 ml-4 hover:text-yellow-900 hover:cursor-pointer hover:underline transition-colors"
-              >
-                My Dashboard
-              </Link>
-            )}
+          <div className="flex flex-row items-center">
+            <span className="text-stone-700 ml-3 md:ml-6 font-medium text-xs md:text-base">Hi, {user.name}</span>
+            <Link
+              href={isAdmin ? "/admin" : "/user"}
+              className="font-bold text-stone-700 ml-2 md:ml-4 w-max md:w-auto hover:text-yellow-900 hover:cursor-pointer hover:underline transition-colors text-xs md:text-base"
+            >
+              {isAdmin ? "Dashboard" : "My Dashboard"}
+            </Link>
           </div>
         )}
       </div>
@@ -64,14 +55,14 @@ export default function Navbar() {
         {user ? (
           <button
             onClick={handleLogout}
-            className="font-bold text-stone-700 hover:text-yellow-900 transition-colors"
+            className="font-bold text-stone-700 hover:text-yellow-900 hover:cursor-pointer transition-colors"
           >
             Logout
           </button>
         ) : (
           <button
             onClick={openLoginModal}
-            className="font-bold text-stone-700 hover:text-yellow-900 transition-colors"
+            className="font-bold text-stone-700 hover:text-yellow-900 hover:cursor-pointer transition-colors"
           >
             Login
           </button>
@@ -96,7 +87,7 @@ export default function Navbar() {
           {user ? (
             <button
               onClick={handleLogout}
-              className="font-bold text-stone-700 hover:text-yellow-900 transition-colors"
+              className="font-bold text-stone-700 hover:text-yellow-900 transition-colors hover:cursor-pointer"
             >
               Logout
             </button>
@@ -106,7 +97,7 @@ export default function Navbar() {
                 openLoginModal();
                 setIsOpen(false);
               }}
-              className="font-bold text-stone-700 hover:text-yellow-900 transition-colors"
+              className="font-bold text-stone-700 hover:text-yellow-900 hover:cursor-pointer transition-colors"
             >
               Login
             </button>

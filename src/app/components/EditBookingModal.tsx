@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { servicesAPI, bookingsAPI } from '../services/api';
-import { Service, BookingItem } from '../types';
+import { Service, BookingItem, ToastType, BUSINESS_HOURS } from '../types';
 
 interface EditBookingModalProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface EditBookingModalProps {
   booking: BookingItem | null;
   onBookingUpdate: (updatedBooking: BookingItem) => void;
   onBookingDelete?: (bookingId: string) => void;
+  showToast: (type: ToastType, message: string, duration?: number) => void;
 }
 
 export default function EditBookingModal({ 
@@ -17,7 +18,8 @@ export default function EditBookingModal({
   onClose, 
   booking, 
   onBookingUpdate,
-  onBookingDelete 
+  onBookingDelete,
+  showToast
 }: EditBookingModalProps) {
   const [services, setServices] = useState<Service[]>([]);
   const [isLoadingServices, setIsLoadingServices] = useState(false);
@@ -67,6 +69,8 @@ export default function EditBookingModal({
     }
   };
 
+
+
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
 
@@ -107,8 +111,37 @@ export default function EditBookingModal({
     try {
       setIsUpdating(true);
       
-      // Combine date and time and format as full ISO datetime
-      const appointmentDateTime = new Date(`${formData.bookingDate}T${formData.appointmentTime}:00.000Z`);
+      // Combine date and time as local datetime (no Z suffix to avoid UTC conversion)
+      const appointmentDateTime = new Date(`${formData.bookingDate}T${formData.appointmentTime}:00`);
+      
+      // Get selected services for time slot validation
+      let selectedServices: Service[] = [];
+      if (booking.status !== "confirmed") {
+        selectedServices = formData.services
+          .filter(serviceId => serviceId !== '')
+          .map(serviceId => services.find(s => s.id.toString() === serviceId))
+          .filter(service => service !== undefined) as Service[];
+      } else {
+        // For confirmed bookings, use existing services
+        selectedServices = booking.services.map(s => ({
+          id: parseInt(s.id),
+          name: s.name,
+          price: s.price,
+          durationMinutes: 60, // Default duration, should come from service data
+          adminId: 0,
+          description: '',
+          createdAt: '',
+          updatedAt: ''
+        })) as Service[];
+      }
+
+      // Validate business hours
+      const hours = appointmentDateTime.getHours();
+      if (hours < 9 || hours >= 16) {
+        showToast('error', `Booking must be between ${BUSINESS_HOURS.openTime} and ${BUSINESS_HOURS.closeTime}`);
+        setIsUpdating(false);
+        return;
+      }
       
       let updateData: any = {
         bookingDate: appointmentDateTime.toISOString()
@@ -160,10 +193,10 @@ export default function EditBookingModal({
 
       onBookingUpdate(updatedBooking);
       onClose();
-      alert('Booking updated successfully!');
+      showToast('success', 'Booking rescheduled successfully!');
     } catch (error) {
       console.error('Error updating booking:', error);
-      alert('Failed to update booking. Please try again.');
+      showToast('error', 'Failed to update booking. Please try again.');
     } finally {
       setIsUpdating(false);
     }
@@ -172,9 +205,19 @@ export default function EditBookingModal({
   const handleDelete = async () => {
     if (!booking) return;
 
-    const confirmDelete = window.confirm('Are you sure you want to delete this booking?');
+    // Show confirmation toast first
+    showToast('warning', 'Click Delete Booking again to confirm deletion', 3000);
+    
+    // Add a confirmation state
+    setIsDeleting(true);
+    
+    setTimeout(() => {
+      setIsDeleting(false);
+    }, 3000);
+  };
 
-    if (!confirmDelete) return;
+  const handleConfirmDelete = async () => {
+    if (!booking) return;
 
     try {
       setIsDeleting(true);
@@ -185,10 +228,10 @@ export default function EditBookingModal({
       }
       
       onClose();
-      alert('Booking deleted successfully!');
+      showToast('success', 'Booking deleted successfully!');
     } catch (error) {
       console.error('Error deleting booking:', error);
-      alert('Failed to delete booking. Please try again.');
+      showToast('error', 'Failed to delete booking. Please try again.');
     } finally {
       setIsDeleting(false);
     }
@@ -380,15 +423,17 @@ export default function EditBookingModal({
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
-              onClick={handleDelete}
-              disabled={isDeleting || isUpdating}
+              onClick={isDeleting ? handleConfirmDelete : handleDelete}
+              disabled={isUpdating}
               className={`flex-1 px-4 py-2 rounded-md transition-colors ${
-                isDeleting || isUpdating
+                isUpdating
                   ? "bg-gray-600 text-gray-400 cursor-not-allowed"
+                  : isDeleting
+                  ? "bg-red-700 text-white hover:bg-red-600 animate-pulse"
                   : "bg-red-600 text-white hover:bg-red-500"
               }`}
             >
-              {isDeleting ? 'Deleting...' : 'Delete Booking'}
+              {isUpdating ? 'Updating...' : isDeleting ? 'Confirm Delete' : 'Delete Booking'}
             </button>
             <button
               type="submit"

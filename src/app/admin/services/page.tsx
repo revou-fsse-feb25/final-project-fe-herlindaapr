@@ -9,9 +9,11 @@ import SearchBar from "../../components/SearchBar";
 import { useState, useEffect } from "react";
 import { servicesAPI } from "../../services/api";
 import { Service } from "../../types";
+import { useToast } from "../../contexts/ToastContext";
 
 export default function ListOfService(){
     const { isAdmin, isAuthenticated, isLoading, user, logout } = useAuth();
+    const { showToast } = useToast();
     const [services, setServices] = useState<Service[]>([]);
     const [filteredServices, setFilteredServices] = useState<Service[]>([]);
     const [isLoadingServices, setIsLoadingServices] = useState(true);
@@ -33,9 +35,12 @@ export default function ListOfService(){
             const servicesData = await servicesAPI.getAll();
             setServices(servicesData);
             setFilteredServices(servicesData);
+            showToast('success', 'Services loaded successfully!');
         } catch (error) {
             console.error('Error fetching services:', error);
-            setError(error instanceof Error ? error.message : 'Failed to load services');
+            const errorMessage = error instanceof Error ? error.message : 'Failed to load services';
+            setError(errorMessage);
+            showToast('error', `Failed to load services: ${errorMessage}`);
         } finally {
             setIsLoadingServices(false);
         }
@@ -65,11 +70,13 @@ export default function ListOfService(){
             setFilteredServices(prevServices => 
                 prevServices.filter(service => service.id !== serviceId)
             );
+            showToast('success', 'Service deleted successfully!');
         } else if (selectedService === null) {
             // Adding new service - add to the list
             const newService = updatedService as Service;
             setServices(prevServices => [...prevServices, newService]);
             setFilteredServices(prevServices => [...prevServices, newService]);
+            showToast('success', `Service "${newService.name}" created successfully!`);
         } else {
             // Updating existing service - update in the list
             setServices(prevServices => 
@@ -86,6 +93,7 @@ export default function ListOfService(){
                         : service
                 )
             );
+            showToast('success', `Service "${updatedService.name || 'Unknown'}" updated successfully!`);
         }
     };
 

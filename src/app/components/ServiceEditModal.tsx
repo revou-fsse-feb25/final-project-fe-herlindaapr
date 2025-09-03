@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import { servicesAPI } from "../services/api";
 import { ServiceEditModalProps, ServiceFormData, ServiceFormErrors } from "../types";
+import { useToast } from "../contexts/ToastContext";
 
 export default function ServiceEditModal({ isOpen, onClose, service, onServiceUpdate }: ServiceEditModalProps) {
+  const { showToast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const isCreateMode = !service;
@@ -112,7 +114,7 @@ export default function ServiceEditModal({ isOpen, onClose, service, onServiceUp
       
     } catch (error) {
       console.error(`Failed to ${isCreateMode ? 'create' : 'update'} service:`, error);
-      alert(`Failed to ${isCreateMode ? 'create' : 'update'} service. Please try again.`);
+      showToast('error', `Failed to ${isCreateMode ? 'create' : 'update'} service. Please try again.`);
     } finally {
       setIsUpdating(false);
     }
@@ -157,7 +159,7 @@ export default function ServiceEditModal({ isOpen, onClose, service, onServiceUp
       
     } catch (error) {
       console.error('Failed to delete service:', error);
-      alert('Failed to delete service. Please try again.');
+      showToast('error', 'Failed to delete service. Please try again.');
     } finally {
       setIsDeleting(false);
     }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
 import { bookingsAPI } from '../services/api';
 import SearchBar from "../components/SearchBar";
 import EditBookingModal from "../components/EditBookingModal";
@@ -9,6 +10,7 @@ import { formatDateTime, BookingItem } from '../types';
 
 export default function UserDashboard(){
     const { user, token, isAuthenticated, isLoading: authLoading } = useAuth();
+    const { showToast } = useToast();
     const [bookings, setBookings] = useState<BookingItem[]>([]);
     const [filteredBookings, setFilteredBookings] = useState<BookingItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -262,6 +264,7 @@ export default function UserDashboard(){
                 booking={selectedBooking}
                 onBookingUpdate={handleBookingUpdate}
                 onBookingDelete={handleBookingDelete}
+                showToast={showToast}
             />
         </div>
     );

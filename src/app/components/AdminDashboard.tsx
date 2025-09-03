@@ -2,12 +2,15 @@
 
 import LoadingSpinner from "./LoadingSpinner";
 import BookingDetailsModal from "./BookingDetailsModal";
+import AdminBookingCalendar from "./AdminBookingCalendar";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { adminAPI, bookingsAPI, servicesAPI, usersAPI } from "../services/api";
 import { DashboardStat, OrderItem, BookingStatus, formatDateTime } from "../types";
+import { useToast } from "../contexts/ToastContext";
 
 export default function AdminDashboard() {
+    const { showToast } = useToast();
 
     const [isLoading, setIsLoading] = useState(true);
     const [stats, setStats] = useState<DashboardStat[]>([]);
@@ -122,7 +125,9 @@ export default function AdminDashboard() {
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
                 if (!isCancelled) {
-                    setError(error instanceof Error ? error.message : 'Failed to load dashboard data');
+                    const errorMessage = error instanceof Error ? error.message : 'Failed to load dashboard data';
+                    setError(errorMessage);
+                    showToast('error', `Dashboard Error: ${errorMessage}`);
                 }
             } finally {
                 if (!isCancelled) {
@@ -160,10 +165,12 @@ export default function AdminDashboard() {
                         : order
                 )
             );
+            
+            // Show success toast
+            showToast('success', `Booking status updated to ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)} successfully!`);
         } catch (error) {
             console.error('Failed to update booking status:', error);
-            // You could add a toast notification here for better UX
-            alert('Failed to update booking status. Please try again.');
+            showToast('error', 'Failed to update booking status. Please try again.');
         }
     };
 
@@ -192,9 +199,9 @@ export default function AdminDashboard() {
 
     return (
         <div className="space-y-6 bg-stone-900">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex md:flex-row flex-col justify-between items-center mb-6">
                     <h1 className="text-2xl font-semibold text-stone-100">Admin Dashboard</h1>                        
-                    <div className="text-sm text-stone-100">Last updated: {new Date().toLocaleDateString()}</div>
+                    <div className="text-sm text-stone-100">Last Updated: {new Date().toLocaleDateString()}</div>
             </div>
         {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -222,7 +229,8 @@ export default function AdminDashboard() {
                 ))}
             </div>
 
-            
+            {/* Booking Calendar */}
+            <AdminBookingCalendar onBookingUpdate={handleStatusUpdate} />
 
             {/* Recent Orders */}
             <div className="bg-stone-800 rounded-lg shadow-lg border border-stone-700">

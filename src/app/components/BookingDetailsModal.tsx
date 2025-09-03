@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { bookingsAPI } from "../services/api";
-import { BookingDetails, BookingDetailsModalProps, formatDateTime } from "../types";
+import { BookingDetails, BookingDetailsModalProps, formatDateTime, parseBookingNotes } from "../types";
+import { useToast } from "../contexts/ToastContext";
 
 export default function BookingDetailsModal({ isOpen, onClose, booking, onStatusUpdate }: BookingDetailsModalProps) {
+  const { showToast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [currentStatus, setCurrentStatus] = useState<string>("");
   const [statusNotes, setStatusNotes] = useState<string>("");
@@ -51,10 +53,12 @@ export default function BookingDetailsModal({ isOpen, onClose, booking, onStatus
         onStatusUpdate(booking.bookingId, newStatus);
       }
       
+      // Show success toast
+      showToast('success', `Booking status successfully updated to ${newStatus.charAt(0).toUpperCase() + newStatus.slice(1)}!`);
+      
     } catch (error) {
       console.error('Failed to update status:', error);
-      // You could add error handling UI here
-      alert('Failed to update status. Please try again.');
+      showToast('error', 'Failed to update booking status. Please try again.');
     } finally {
       setIsUpdating(false);
     }
@@ -291,16 +295,34 @@ export default function BookingDetailsModal({ isOpen, onClose, booking, onStatus
               </div>
 
               {/* Notes Display */}
-              {booking.notes && (
-                <div>
-                  <label className="block text-sm font-medium text-stone-300 mb-1">
-                    Notes
-                  </label>
-                  <p className="text-stone-100 text-sm bg-stone-700 rounded-md p-3 border border-stone-600">
-                    {booking.notes}
-                  </p>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-stone-300 mb-1">
+                  Notes
+                </label>
+                {(() => {
+                  const { userNotes, systemNotes } = parseBookingNotes(booking.notes || '');
+                  
+                  return (
+                    <div className="space-y-3">
+                      {/* User Notes */}
+                      <div className="text-stone-100 text-sm bg-stone-700 rounded-md p-3 border border-stone-600">
+                        {userNotes || 'No any notes from user'}
+                      </div>
+                      
+                      {/* System Notes */}
+                      {systemNotes.length > 0 && (
+                        <div className="text-stone-300 text-xs bg-stone-800 rounded-md p-2 border border-stone-500">
+                          {systemNotes.map((note, index) => (
+                            <div key={index} className="text-blue-300">
+                              {note}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
 
               {/* Total Amount */}
               <div>

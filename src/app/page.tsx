@@ -53,13 +53,13 @@ export default function Home() {
 
         {/* Booking Form */}
         <section id="bookingform">
-          <div className="w-full bg-white h-svh pt-14">
-            <h1 className="text-center text-yellow-950 text-4xl font-extrabold py-4">Book Yours Now!</h1>
+          <div className="w-full bg-white min-h-max py-14">
+            <h1 className="text-center text-yellow-950 text-4xl font-extrabold pt-4">Book Yours Now!</h1>
             <div className="w-full h-full flex flex-col md:flex-row bg-white place-items-center">
               <div className="w-5/6 md:w-1/2 flex place-content-center">
                 <LadyEyeTracking />
               </div>
-              <div className="w-5/6 md:w-1/2 flex place-items-center">
+              <div className="w-5/6 md:w-1/2 mt-10 md:mt-20 flex place-items-center">
                 <BookingForm />
               </div>
             </div>
